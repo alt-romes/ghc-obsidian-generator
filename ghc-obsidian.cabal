@@ -27,7 +27,8 @@ executable ghc-obsidian
                       megaparsec,
                       text,
                       filepattern,
-                      directory
+                      directory,
+                      filepath
 
     hs-source-dirs:   app
     default-language: GHC2021

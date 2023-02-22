@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Control.Monad
+import System.FilePath
 import Data.Text (Text)
 import Documentation.Haddock -- TODO: Also export documentation with function signatures (and possibly the definition in a spoiler tag)
 import System.Directory
@@ -13,33 +14,17 @@ import qualified Data.Text.IO as T
 
 import Parser
 
--- | Join multiple single-line comments in consecutive lines into a single multiline comment
--- joinMultiComments :: [Comment] -> [Comment]
--- joinMultiComments = map snd . go
---   where
---     go :: [Comment] -> [(Int, Comment)] -- ^ (StartLine, Comment)
---     go = foldr (\(Ext.Comment _ (Ext.srcSpanStart -> (startLine,_)) (T.pack -> s)) acc ->
---         case acc of
---           [] -> [(startLine, Comment s)]
---           (n,Comment s'):otherComments
---             | startLine+1 == n -> (startLine, Comment $ s <> "\n" <> s'):otherComments
---             | otherwise -> (startLine, Comment $ s <> "\n"):acc -- The parser expects all comments to end with a newline
---       ) mempty
+ppr :: Note -> Text
+ppr (Note{name, body, references}) =
+  let title = "Note [[" <> name <> "]]"
+      tildes = T.pack $ map (const '~') [1..T.length title]
+   in (case references of
+         [] -> ""
+         (x:xs) -> "\nReferences:" <> foldr (\y -> ((" [[" <> normalizeNoteName y <> "]],") <> )) (" [[" <> normalizeNoteName x <> "]]") xs <> "\n\n"
+      ) <> "```\n" <> title <> "\n" <> tildes <> "\n\n" <> T.unlines body <> "```\n"
 
--- getModName :: Module w -> Text
--- getModName (Module _ Nothing _ _ _) = "Main"
--- getModName (Module _ (Just (Ext.ModuleHead _ (Ext.ModuleName _ str) _ _)) _ _ _) = T.pack str
--- getModName _ = error "internal error"
-
--- notesInModule :: FilePath -> IO [Note]
--- notesInModule fp = do
---   Ext.parseFileWithComments (simpleParseMode fp) fp >>= \case
---     Ext.ParseOk (getModName -> modName,joinMultiComments -> comments) ->
---       pure $ concatMap (extractNotes modName) comments
---     Ext.ParseFailed _ e -> fail ("When parsing " <> fp <> " got \"" <> e <> "\"")
---   where
---     simpleParseMode name = Ext.ParseMode name Ext.Haskell2010 [Ext.EnableExtension x | x <- [minBound..maxBound]] True True Nothing True
-
+normalizeNoteName :: Text -> Text
+normalizeNoteName = T.replace "/" " or "
 
 {- 
 Note [Teste de som]
@@ -71,12 +56,18 @@ Here's more on this note...
 -- Double line!
 main :: IO ()
 main = do
-  pure ()
   -- readFile "app/Main.hs" >>= 
-  -- doesDirectoryExist "compiler" >>= \case
-  --   False -> putStrLn "Couldn't find the directory 'compiler'. This program expects to be run in the root of the ghc tree."
-  --   True  -> do
-  --     hscs <- getDirectoryFiles "compiler" ["**/*.hs"]
-  --     mapM_ ((mapM_ print <=< notesInModule) . ("compiler/" <>)) hscs
+  doesDirectoryExist "compiler" >>= \case
+    False -> putStrLn "Couldn't find the directory 'compiler'. This program expects to be run in the root of the ghc tree."
+    True  -> do
+      hscs <- getDirectoryFiles "compiler" ["**" </> "*.hs"]
+      mapM_ (\(("compiler" </>) -> hsf) -> do
+        print hsf
+        let output_dir = "NotesVault" </> hsf
+        notes <- notesInModule hsf
+        createDirectoryIfMissing True output_dir
+        mapM_ (\n -> T.writeFile (output_dir </> T.unpack (normalizeNoteName $ name n) <.> "md") (ppr n)) notes
+            ) hscs
+
 
 
