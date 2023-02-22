@@ -24,7 +24,6 @@ executable ghc-obsidian
     -- other-extensions:
     build-depends:    base,
                       haddock-api,
-                      haskell-src-exts,
                       megaparsec,
                       text,
                       filepattern,

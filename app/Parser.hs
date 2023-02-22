@@ -12,6 +12,30 @@ import Text.Megaparsec.Char
 import qualified Data.Text as T
 import qualified Text.Megaparsec.Char.Lexer as L
 
+-- We only care about comments
+data Module = Module { modpath  :: Text
+                     , comments :: [Comment]
+                     } deriving Show
+
+ignoreAll :: Parser ()
+ignoreAll = L.space
+  (void $ notFollowedBy (lineComment <|> blockComment) <* anySingle)
+  empty
+  empty
+
+lineComment :: Parser Comment
+lineComment = Comment <$> (string "--" *> takeWhileP (Just "character") (/= '\n'))
+
+blockComment :: Parser Comment
+blockComment = string "{-" *> (Comment . T.pack <$> manyTill anySingle (string "-}")) <* sc
+
+moduleParser :: Text -- ^ Module name
+             -> Parser Module
+moduleParser modName = do
+  comments <- manyTill (ignoreAll *> (blockComment <|> lineComment)) eof
+  pure Module{modpath = modName, comments=comments}
+
+
 -- | Multiline comment
 newtype Comment = Comment { comm :: Text }
   deriving Show
@@ -47,6 +71,14 @@ noteLine = T.pack <$> (manyTill printChar newline <* sc)
 
 noteTitle :: Parser Text
 noteTitle = T.pack <$> (symbol "Note" *> lexeme (symbol "[" *> manyTill printChar (char ']')) <* some (char '~'))
+
+extractComments :: Text -- ^ Module name
+                -> Text -- ^ Content
+                -> Module
+extractComments modName txt
+  = case parse (moduleParser modName) "Extract module" txt of
+      Left e -> error (show e)
+      Right ns -> ns
 
 extractNotes :: Text -- ^ Module Name the comment is in
              -> Comment -- ^ Comment
