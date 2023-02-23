@@ -11,6 +11,8 @@ The Obsidian program to create and maintain knowledge bases.
 
 One can then load the vault into Obsidian and search through and visualize the Notes of the GHC compiler.
 
+TODO: Notes in single line comments don't seem to be parsed correctly (see GHC/CmmToC.hs)
+
 ## How to use
 
 Install the `ghc-obsidian` executable with cabal by cloning this repository and running `cabal install` inside.
