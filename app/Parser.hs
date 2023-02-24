@@ -61,7 +61,7 @@ noteParser modName = do
     pure $ Note {name = noteName, mod=modName, body=noteLines, references=refs}
 
 noteLine :: Parser Text
-noteLine = T.pack <$> manyTill anySingle newline
+noteLine = T.pack <$> manyTill anySingle (void newline <|> eof)
 
 noteTitle :: Parser Text
 noteTitle = T.pack <$> try (symbol "Note" *> (symbol "[" *> manyTill anySingle (char ']')) <* sc <* newline <* sc <* some (char '~') <* newline)
