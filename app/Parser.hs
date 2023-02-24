@@ -64,7 +64,7 @@ noteLine :: Parser Text
 noteLine = T.pack <$> manyTill anySingle newline
 
 noteTitle :: Parser Text
-noteTitle = T.pack <$> try (symbol "Note" *> (symbol "[" *> manyTill anySingle (char ']')) <* sc <* newline <* some (char '~') <* newline)
+noteTitle = T.pack <$> try (symbol "Note" *> (symbol "[" *> manyTill anySingle (char ']')) <* sc <* newline <* sc <* some (char '~') <* newline)
 
 noteReference :: Parser Text
 noteReference = T.pack <$> try (symbol "Note" *> (symbol "[" *> manyTill anySingle (char ']')))
