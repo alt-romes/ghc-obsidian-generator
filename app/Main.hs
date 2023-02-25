@@ -12,19 +12,28 @@ import System.FilePattern.Directory
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import Parser
+import NewParser
 
-ppr :: Note -> Text
-ppr (Note{name, body, references}) =
-  let title = "Note [[" <> name <> "]]"
-      tildes = T.pack $ map (const '~') [1..T.length title]
-   in (case references of
-         [] -> ""
-         (x:xs) -> "\nReferences:" <> foldr (\y -> ((" [[" <> normalizeNoteName y <> "]],") <> )) (" [[" <> normalizeNoteName x <> "]]") xs <> "\n\n"
-      ) <> "```\n" <> title <> "\n" <> tildes <> "\n\n" <> T.unlines body <> "```\n"
+class Pretty p where
+  ppr :: p -> Text
+
+instance Pretty Note where
+  ppr (Note{title, body, references}) =
+     (case references of
+           [] -> ""
+           (NoteReference x:xs) -> "\nReferences:" <> foldr (\(NoteReference y) -> ((" [[" <> normalizeNoteName y <> "]],") <> )) (" [[" <> normalizeNoteName x <> "]]") xs <> "\n\n"
+        ) <> "```\n" <> ppr title <> T.unlines body <> "```\n"
+
+instance Pretty NoteTitle where
+  -- We only pretty print note title in the body of the note, so we don't worry about the name being escaped
+  ppr (NoteTitle t h) = t' <> "\n" <> tildes <> "\n"
+    where
+      t' = "Note [" <> (if h then ("Historic - " <>) else id) t <> "]"
+      tildes = T.pack $ map (const '~') [1..T.length t']
 
 normalizeNoteName :: Text -> Text
-normalizeNoteName = T.replace "#" "H" . T.replace "/" "|" -- # and / are forbidden in Obsidian links, so we work around it
+normalizeNoteName = T.replace ":" "-" . T.replace "#" "H" . T.replace "/" "Y"
+                  -- # and / are forbidden in Obsidian links, so we work around it
 
 {- 
 Note [Teste de som]
@@ -66,7 +75,7 @@ main = do
         let output_dir = "NotesVault" </> hsf
         notes <- notesInModule hsf
         createDirectoryIfMissing True output_dir
-        mapM_ (\n -> T.writeFile (output_dir </> T.unpack (normalizeNoteName $ name n) <.> "md") (ppr n)) notes
+        mapM_ (\n -> T.writeFile (output_dir </> T.unpack ((\(NoteTitle t _) -> normalizeNoteName t) (title n)) <.> "md") (ppr n)) notes
             ) hscs
 
 
