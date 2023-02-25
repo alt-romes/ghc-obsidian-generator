@@ -3,9 +3,10 @@
 {-# LANGUAGE LambdaCase #-}
 module Parser where
 
-import Data.Maybe
+import Control.Applicative (liftA2)
 import Control.Monad
 import Data.Functor.Identity
+import Data.Maybe
 import Data.Text (Text)
 import Data.Void
 import Prelude hiding (mod)
@@ -19,7 +20,8 @@ data Comment = Comment {startLine :: Int, comm :: Text}
   deriving Show
 
 consumeAll :: Parser Comment
-consumeAll = skipManyTill anySingle (lineComment <|> blockComment <|> (Comment (-1) "" <$ eof))
+consumeAll = skipManyTill anySingle (lineComment <|> (Comment (-1) "" <$ try (string "`{-'")) -- ugly hack to avoid unterminated {- in Parser.Errors.Ppr
+                                                 <|> blockComment <|> (Comment (-1) "" <$ eof))
 
 lineComment :: Parser Comment
 lineComment = do
@@ -29,7 +31,14 @@ lineComment = do
 blockComment :: Parser Comment
 blockComment = do
   pos <- unPos . sourceLine <$> getSourcePos
-  string "{-" *> (Comment pos . T.pack <$> manyTill anySingle (string "-}")) <* sc
+  (notFollowedBy "{-#" *> string "{-") *> ((Comment pos <$> go) <* sc)
+  where
+    go :: Parser T.Text
+    go = ("" <$ string "-}") <|> liftA2 (<>) (pragma <|> (T.singleton <$> anySingle)) go
+    
+    pragma :: Parser T.Text
+    pragma = string "{-#" *> manyTill anySingle (string "#-}") >>= \t -> pure ("{-#" <> T.pack t <> "#-}")
+
 
 parseComments :: Parser [Comment]
 parseComments = manyTill consumeAll eof
