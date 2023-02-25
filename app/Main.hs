@@ -24,7 +24,7 @@ ppr (Note{name, body, references}) =
       ) <> "```\n" <> title <> "\n" <> tildes <> "\n\n" <> T.unlines body <> "```\n"
 
 normalizeNoteName :: Text -> Text
-normalizeNoteName = T.replace "/" " or "
+normalizeNoteName = T.replace "#" "H" . T.replace "/" "|" -- # and / are forbidden in Obsidian links, so we work around it
 
 {- 
 Note [Teste de som]
