@@ -2,14 +2,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 module NewParser where
-import Debug.Trace
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
-import Control.Applicative (liftA2)
 import Control.Monad
 import Data.Functor.Identity
 import Data.Maybe
@@ -34,14 +32,10 @@ data NoteType = LineNote | BlockNote
   deriving (Enum, Bounded)
 
 -- parseCNote :: Parser Note
--- parseCNote = noteParser id (string "*/")
+-- parseCNote = noteParser CBlockNote
 
 parseHaskellNote :: Parser Note
 parseHaskellNote = noteParser LineNote <|> noteParser BlockNote
-  -- where
-  --   lineNote = noteParser (hspace *> string "--" *>) (notFollowedBy (string "--" *> hspace))
-  --   blockNote = noteParser id (string "-}") -- TODO: Doesn't end at pragma end
-
 
 -- Assumes no previous input, much like how whitespace lexing works
 noteParser :: NoteType -> Parser Note
@@ -109,4 +103,4 @@ notesInModule fp = do
   let topParser = skipLinesTill (eof <|> void (lookAhead parseHaskellNote)) *> manyTill parseHaskellNote eof
   case parse topParser fp content of
     Right ns -> pure ns
-    Left e -> fail ("When parsing " <> fp <> " got \"" <> errorBundlePretty e <> "\"")
+    Left e -> fail $ errorBundlePretty e

@@ -66,17 +66,25 @@ Here's more on this note...
 main :: IO ()
 main = do
   -- readFile "app/Main.hs" >>= 
-  doesDirectoryExist "compiler" >>= \case
-    False -> putStrLn "Couldn't find the directory 'compiler'. This program expects to be run in the root of the ghc tree."
-    True  -> do
-      hscs <- getDirectoryFiles "compiler" ["**" </> "*.hs"]
-      mapM_ (\(("compiler" </>) -> hsf) -> do
-        print hsf
-        let output_dir = "NotesVault" </> hsf
-        notes <- notesInModule hsf
-        createDirectoryIfMissing True output_dir
-        mapM_ (\n -> T.writeFile (output_dir </> T.unpack ((\(NoteTitle t _) -> normalizeNoteName t) (title n)) <.> "md") (ppr n)) notes
-            ) hscs
+  let notes_dir = "NotesVault"
+  hscs <- doesDirectoryExist "compiler" >>= \case
+    False -> couldn't_find "compiler"
+    True  -> map ("compiler" </>) <$> getDirectoryFiles "compiler" ["**" </> "*.hs"]
+  libs <- doesDirectoryExist "libraries" >>= \case
+    False -> couldn't_find "libraries"
+    True  -> map ("libraries" </>) <$> getDirectoryFiles "libraries" ["**" </> "*.hs"]
+  -- cs <- doesDirectoryExist "rts" >>= \case
+  --   False -> couldn't_find "rts"
+  --   True  -> map ("rts" </>) <$> getDirectoryFiles "rts" ["**" </> "*.c", "**" </> "*.cmm", "**" </> "*.h"]
+  mapM_ (\f -> do
+    putStrLn f
+    let output_dir = notes_dir </> f
+    notes <- notesInModule f
+    createDirectoryIfMissing True output_dir
+    mapM_ (\n -> T.writeFile (output_dir </> T.unpack ((\(NoteTitle t _) -> normalizeNoteName t) (title n)) <.> "md") (ppr n)) notes
+        ) (hscs <> libs)
+  where
+    couldn't_find dir = fail $ "Couldn't find the directory '"<> dir <>"'. This program expects to be run in the root of the ghc tree."
 
 
 
