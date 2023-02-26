@@ -79,10 +79,12 @@ main = do
   mapM_ (\f -> do
     putStrLn f
     let output_dir = notes_dir </> f
-    notes <- notesInModule f
-    createDirectoryIfMissing True output_dir
-    mapM_ (\n -> T.writeFile (output_dir </> T.unpack ((\(NoteTitle t _) -> normalizeNoteName t) (title n)) <.> "md") (ppr n)) notes
-        ) (hscs <> libs)
+    notesInModule f >>= \case
+      [] -> pure ()
+      notes -> do
+        createDirectoryIfMissing True output_dir
+        mapM_ (\n -> T.writeFile (output_dir </> T.unpack ((\(NoteTitle t _) -> normalizeNoteName t) (title n)) <.> "md") (ppr n)) notes
+            ) (hscs <> libs)
   where
     couldn't_find dir = fail $ "Couldn't find the directory '"<> dir <>"'. This program expects to be run in the root of the ghc tree."
 
