@@ -52,7 +52,7 @@ noteParser prefixf end = do
 
 noteTitle :: (∀ a. Parser a -> Parser a) -> Parser NoteTitle
 noteTitle prefixf = try $ do
-  historic <- prefixf $ optional (symbol "Historic")
+  historic <- prefixf $ optional (string "Historic" *> string "al" *> hspace) -- there exist both "Historic" and "Historical" Notes. Same meaning, different syntax
   ntitle   <- symbol "Note" *> (string "[" *> manyTill anySingle (string "]")) <* eol
                 <* prefixf (hspace <* some (char '~') <* eol)
   pure $ NoteTitle (T.pack ntitle) (isJust historic)

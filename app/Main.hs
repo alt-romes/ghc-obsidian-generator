@@ -28,7 +28,7 @@ instance Pretty NoteTitle where
   -- We only pretty print note title in the body of the note, so we don't worry about the name being escaped
   ppr (NoteTitle t h) = t' <> "\n" <> tildes <> "\n"
     where
-      t' = "Note [" <> (if h then ("Historic - " <>) else id) t <> "]"
+      t' = (if h then ("Historical " <>) else id) "Note [" <> t <> "]"
       tildes = T.pack $ map (const '~') [1..T.length t']
 
 normalizeNoteName :: Text -> Text
