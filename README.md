@@ -22,6 +22,7 @@ Choose "Open Vault" within the "File" tab in Obsidian, and select the `NotesVaul
 ## Screenshots
 
 
-<img width="1440" alt="Screenshot 2023-02-22 at 18 18 31" src="https://user-images.githubusercontent.com/21295306/220725750-0f061a9d-66de-411b-baeb-0bade08745c0.png">
-
-<img width="1440" alt="Screenshot 2023-02-22 at 18 21 07" src="https://user-images.githubusercontent.com/21295306/220725771-8dbdd632-394e-4611-a1b5-9e461677f208.png">
+![Screenshot 2023-02-26 at 13 32 24](https://user-images.githubusercontent.com/21295306/221413824-5ef05ed5-c8c8-4b94-8656-298c636c276e.png)
+![Screenshot 2023-02-26 at 13 37 19](https://user-images.githubusercontent.com/21295306/221413825-5118eb6b-6c64-4f6b-bf38-61109ac63413.png)
+![Screenshot 2023-02-26 at 13 31 43](https://user-images.githubusercontent.com/21295306/221413827-621b4c5f-99e2-42f5-9f38-ca74f2ad3c09.png)
+![Screenshot 2023-02-26 at 13 31 46](https://user-images.githubusercontent.com/21295306/221413828-a3d3f881-fc0b-4f46-afb3-f97c5566e48f.png)
