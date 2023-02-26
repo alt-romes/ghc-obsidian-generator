@@ -32,8 +32,8 @@ instance Pretty NoteTitle where
       tildes = T.pack $ map (const '~') [1..T.length t']
 
 normalizeNoteName :: Text -> Text
-normalizeNoteName = T.replace ":" "-" . T.replace "#" "H" . T.replace "/" "Y"
-                  -- # and / are forbidden in Obsidian links, so we work around it
+normalizeNoteName = T.replace ":" ";" . T.replace "#" "H" . T.replace "/" "Y"
+                  -- # and / and : are forbidden in Obsidian links, so we work around it
 
 {- 
 Note [Teste de som]

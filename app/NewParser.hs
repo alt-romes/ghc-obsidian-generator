@@ -63,7 +63,7 @@ parseReferences = skipAnyTill lookAheadNoteRef *> manyTill (noteReference <* ski
       lookAheadNoteRef = lookAhead (void noteReference) <|> eof
 
 noteReference :: Parser NoteReference
-noteReference = NoteReference . T.pack <$> try (symbol "Note" *> (string "[" *> manyTill anySingle (string "]")))
+noteReference = NoteReference . T.pack . unwords <$> try (symbol "Note" *> (string "[" *> manyTill (manyTill anySingle (space1 <|> void (lookAhead (char ']')))) (string "]")))
 
 noteLine :: Parser Text
 noteLine = T.pack <$> manyTill anySingle (void eol <|> eof)

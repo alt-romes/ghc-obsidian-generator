@@ -20,7 +20,7 @@ common warnings
 executable ghc-obsidian
     import:           warnings
     main-is:          Main.hs
-    other-modules:    Parser
+    other-modules:    Parser, NewParser
     -- other-extensions:
     build-depends:    base,
                       haddock-api,
