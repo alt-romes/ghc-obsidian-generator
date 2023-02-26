@@ -52,24 +52,24 @@ noteParser nt = do
         Right r -> r
   pure $ Note {title = noteName, body=noteLines, references=refs, subnotes=[]}
     where
-      lookAheadNoteTitle = lookAhead (void $ noteTitle LineNote <|> noteTitle BlockNote) <|> eof
+      lookAheadNoteTitle = lookAhead (void $ noteTitle nt) <|> eof
 
 noteTitle :: NoteType -> Parser NoteTitle
 noteTitle nt = try $ do
   (historic, ntitle) <- case nt of
     LineNote -> do
-      historic <- symbol "--" *> pHistoric
-      ntitle   <- symbol "--" *> pTitle
-                    <* hspace <* symbol "--" <* pTilde
+      historic <- hsc *> symbol "--" *> pHistoric
+      ntitle   <- pTitle
+                    <* hsc <* symbol "--" <* pTilde
       pure (historic, ntitle)
     BlockNote -> do
       historic <- optional (symbol "{-") *> pHistoric -- optional {- to account for notes starting on the comment block
-      ntitle   <- hspace *> pTitle <* pTilde
+      ntitle   <- hsc *> pTitle <* pTilde
       pure (historic, ntitle)
   pure $ NoteTitle (T.pack ntitle) (isJust historic)
   where
     -- there exist both "Historic" and "Historical" Notes. Same meaning, different syntax
-    pHistoric = optional (string "Historic" *> string "al" *> hspace)
+    pHistoric = optional (string "Historic" *> string "al" *> hsc)
     pTitle = symbol "Note" *> string "[" *> manyTill anySingle (string "]") <* skipAnyTill eol
     pTilde = some (char '~') <* eol
 
@@ -86,9 +86,10 @@ noteReference :: Parser NoteReference
 noteReference = NoteReference . T.pack . unwords <$> try (symbol "Note" *> (string "[" *> manyTill (manyTill anySingle (space1 <|> void (lookAhead (char ']')))) (string "]")))
 
 noteLine :: NoteType -> Parser Text
-noteLine = fmap T.pack . \case
+noteLine nt = fmap T.pack $ case nt of
   LineNote  -> symbol "--" *> manyTill anySingle (void eol <|> eof)
-  BlockNote -> manyTill anySingle (void (lookAhead $ string "-}") <|> void eol <|> eof)
+  BlockNote -> manyTill anySingle (lookAhead (void $ string "-}") <|> void eol <|> eof)
+
 
 skipAnyTill :: Parser end -> Parser end
 skipAnyTill = skipManyTill anySingle
@@ -96,8 +97,11 @@ skipAnyTill = skipManyTill anySingle
 skipLinesTill :: Parser end -> Parser end
 skipLinesTill = skipManyTill (skipAnyTill (void eol <|> eof))
 
+hsc :: Parser ()
+hsc = skipMany (hidden hspace1)
+
 symbol :: Text -> Parser Text
-symbol s = string' s <* hspace
+symbol s = string' s <* hsc
 
 notesInModule :: FilePath -> IO [Note]
 notesInModule fp = do
