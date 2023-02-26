@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 module NewParser where
+import Debug.Trace
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -30,6 +31,7 @@ data NoteTitle = NoteTitle Text Bool -- ^ Is historic note?
 newtype NoteReference = NoteReference Text deriving Show
 
 data NoteType = LineNote | BlockNote
+  deriving (Enum, Bounded)
 
 -- parseCNote :: Parser Note
 -- parseCNote = noteParser id (string "*/")
@@ -45,37 +47,34 @@ parseHaskellNote = noteParser LineNote <|> noteParser BlockNote
 noteParser :: NoteType -> Parser Note
 noteParser nt = do
   noteName  <- noteTitle nt
-  noteLines <- manyTill (noteLine nt) (endComment nt <|> lookAheadNoteTitle)
-  skipLinesTill lookAheadNoteTitle
+  noteLines <- manyTill (noteLine nt) (endComment nt <|> lookAhead (void $ noteTitle nt) <|> eof)
+  skipLinesTill $ void (lookAhead $ choice [noteTitle t | t <- [minBound..maxBound]]) <|> eof
   let refs = case parse parseReferences "References" (T.unwords noteLines) of
         Left e -> error $ errorBundlePretty e
         Right r -> r
   pure $ Note {title = noteName, body=noteLines, references=refs, subnotes=[]}
-    where
-      lookAheadNoteTitle = lookAhead (void $ noteTitle nt) <|> eof
 
 noteTitle :: NoteType -> Parser NoteTitle
 noteTitle nt = try $ do
   (historic, ntitle) <- case nt of
     LineNote -> do
       historic <- hsc *> symbol "--" *> pHistoric
-      ntitle   <- pTitle
-                    <* hsc <* symbol "--" <* pTilde
+      ntitle   <- pTitle <* hsc <* symbol "--" <* pTilde
       pure (historic, ntitle)
     BlockNote -> do
-      historic <- optional (symbol "{-") *> pHistoric -- optional {- to account for notes starting on the comment block
-      ntitle   <- hsc *> pTitle <* pTilde
+      historic <- hsc *> optional (symbol "{-") *> pHistoric -- optional {- to account for notes starting on the comment block
+      ntitle   <- pTitle <* hsc <* pTilde
       pure (historic, ntitle)
   pure $ NoteTitle (T.pack ntitle) (isJust historic)
   where
     -- there exist both "Historic" and "Historical" Notes. Same meaning, different syntax
     pHistoric = optional (string "Historic" *> string "al" *> hsc)
     pTitle = symbol "Note" *> string "[" *> manyTill anySingle (string "]") <* skipAnyTill eol
-    pTilde = some (char '~') <* eol
+    pTilde = some (char '~') <* hsc <* eol
 
 endComment :: NoteType -> Parser ()
 endComment = \case
-  LineNote -> notFollowedBy (string "--")
+  LineNote -> notFollowedBy (hsc *> string "--")
   BlockNote -> void $ string "-}"
 
 parseReferences :: Parser [NoteReference]
@@ -87,7 +86,7 @@ noteReference = NoteReference . T.pack . unwords <$> try (symbol "Note" *> (stri
 
 noteLine :: NoteType -> Parser Text
 noteLine nt = fmap T.pack $ case nt of
-  LineNote  -> symbol "--" *> manyTill anySingle (void eol <|> eof)
+  LineNote  -> hsc *> symbol "--" *> manyTill anySingle (void eol <|> eof)
   BlockNote -> manyTill anySingle (lookAhead (void $ string "-}") <|> void eol <|> eof)
 
 
